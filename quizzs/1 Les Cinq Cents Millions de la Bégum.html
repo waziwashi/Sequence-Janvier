@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QuizzFinSéance</title>
+  <style>
+    :root{--bg:white;--card:white;--text:#e6eef8;--accent:#F5CB05}
+    body.bg-image {
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+    html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:linear-gradient(180deg,#3A38A0 0%, #051226 100%);color:var(--text);}
+    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center}
+    .card{background:rgba(255,255,255,0.03);border-radius:12px;padding:28px;margin:0 5vw;width:100%;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+    .meta{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+    .question{font-size:4vw;line-height:1.4;margin-bottom:18px;text-shadow: 3px 3px 0 black, 0 0 10px black;}
+
+    .answers{display:grid;grid-template-columns:repeat(2,1fr);gap:1em;color: white;}
+    .ans-btn{background:rgba(255,255,255,0.03);border:2px solid rgba(255,255,255,0.06);padding:18px;border-radius:10px;font-size:2em;color:white pointer;transition:transform .12s ease, box-shadow .12s ease;min-height:64px;display:flex;align-items:center;justify-content:center;text-align:center; background-color: rgba(48, 53, 118, 0.8);color: white;}
+    .ans-btn:active{transform:scale(.997)}
+    .ans-btn:hover{box-shadow:0 6px 18px rgba(2,6,23,0.5);border-color: var(--accent);transition: 0.5s;}
+    .ans-btn[aria-disabled="true"]{cursor:default;opacity:.98}
+
+    .correct{background:#d1fae5;border-color:#05F564;color:#064e3b}
+    .wrong{background:#fee2e2;border-color:#F51305;color:#7f1d1d}
+
+    .controls{display:flex;gap:8px;align-items:center;margin-top:18px}
+    .btn{background:var(--accent);color:white;padding:10px 14px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06)}
+    .result{margin-left:auto;font-weight:600}
+
+    @media (max-width:480px){.ans-btn{padding:14px;font-size:15px;min-height:60px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <main class="card" role="application" aria-labelledby="q-title">
+      <h1 id="q-title" class="question"><span id="question-text">Chargement...</span></h1>
+
+      <section class="answers" id="answers" role="list" aria-labelledby="q-title">
+        <!-- boutons générés par JS -->
+      </section>
+
+      <div class="controls">
+        <button id="resetBtn" class="btn">Recommencer</button>
+        <button id="nextBtn" class="btn ghost">Suivant</button>
+        <div class="result" id="result" aria-live="polite"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const bank = [
+        {question: "Mini-Quiz de fin de séance"},    
+        {
+            question: "Tuto : Comment s'écrit mon prénom ?",
+            answers:['Erwan','Evan','Erwann','Ewan'],
+            correctIndexes:[3]
+        },
+        {
+            question:'Une ville harmonieuse et calme où la nature resplendit.',
+            answers:["La Cité de l'Acier","France-Ville"],
+            correctIndexes:[1],
+            background: "france-ville.jpg"
+        },
+        {
+            question: "Une ville monstrueuse et bruyante au milieu d'un désert.",
+            answers:["La Cité de l'Acier","France-Ville"],
+            correctIndexes:[0],
+            background: "cite de lacier.jpg"
+        },
+      {question: "Utopie et Dystopie sont deux faces d'une même pièce", answers:["Vrai","Faux"], correctIndexes:[0]},
+      {question: "Merci pour votre attention, à demain ! (ʘ‿ʘ)╯",  correctIndexes:2}
+    ]
+    let bankIndex = 0
+
+    let current = {...bank[0]}
+    let answered = false
+
+    const qText = document.getElementById('question-text')
+    const answersEl = document.getElementById('answers')
+    const resultEl = document.getElementById('result')
+    const nextBtn = document.getElementById('nextBtn')
+    const resetBtn = document.getElementById('resetBtn')
+
+    function renderQuestion(){
+      qText.textContent = current.question
+      answersEl.innerHTML = ''
+      resultEl.textContent = ''
+      answered = false
+
+        if (current.background) {
+            document.body.classList.add('bg-image')
+            document.body.style.backgroundImage = `url('${current.background}')`
+        } else {
+            document.body.classList.remove('bg-image')
+            document.body.style.backgroundImage = ''
+        }
+
+      current.answers.forEach((txt, idx) =>{
+        const btn = document.createElement('button')
+        btn.className = 'ans-btn'
+        btn.type = 'button'
+        btn.setAttribute('role','listitem')
+        btn.dataset.index = idx
+        btn.innerHTML = txt
+        btn.addEventListener('click', onChoose)
+        answersEl.appendChild(btn)
+      })
+    }
+
+    function onChoose(e) {
+      if (answered) return
+
+      const btn = e.currentTarget
+      const idx = Number(btn.dataset.index)
+      answered = true
+
+      const children = Array.from(answersEl.children)
+
+      children.forEach((el, i) => {
+        el.setAttribute('aria-disabled', 'true')
+
+        if (current.correctIndexes.includes(i)) {
+          el.classList.add('correct')
+        } else {
+          el.classList.add('wrong')
+        }
+      })
+
+      if (current.correctIndexes.includes(idx)) {
+        resultEl.textContent = "✅ Bonne réponse !"
+      } else {
+        resultEl.textContent = "❌ Mauvaise réponse."
+      }
+    }
+
+
+    nextBtn.addEventListener('click', ()=>{
+      bankIndex = (bankIndex + 1) % bank.length
+      current = {...bank[bankIndex]}
+      renderQuestion()
+    })
+
+    resetBtn.addEventListener('click', ()=>{
+    bankIndex = 0
+    current = {...bank[0]}
+    renderQuestion()
+    })
+
+    renderQuestion()
+  </script>
+</body>
+</html>
